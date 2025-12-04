@@ -12,7 +12,7 @@ PORT=${PORT:-8080}
 ID=${ID:-"a1b2c3d4-e5f6-7890-abcd-ef1234567890"}
 WSPATH=${WSPATH:-"/api/v2/stream"}
 
-# HTTPUpgrade транспорт - лучше для CDN
+# XHTTP (SplitHTTP) - рекомендован для CDN
 cat > ./config.json <<XRAYEOF
 {
   "log": {"loglevel": "info"},
@@ -25,10 +25,10 @@ cat > ./config.json <<XRAYEOF
       "decryption": "none"
     },
     "streamSettings": {
-      "network": "httpupgrade",
-      "httpupgradeSettings": {
+      "network": "xhttp",
+      "xhttpSettings": {
         "path": "${WSPATH}",
-        "host": ""
+        "mode": "auto"
       }
     },
     "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
@@ -37,6 +37,6 @@ cat > ./config.json <<XRAYEOF
 }
 XRAYEOF
 
-echo "=== HTTPUpgrade Config ==="
+echo "=== XHTTP Config ==="
 cat ./config.json
 exec ./xray run -config ./config.json
