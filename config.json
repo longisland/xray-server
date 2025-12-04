@@ -17,9 +17,12 @@
         "decryption": "none"
       },
       "streamSettings": {
-        "network": "splithttp",
-        "splithttpSettings": {
-          "path": "/download"
+        "network": "ws",
+        "wsSettings": {
+          "path": "/stream",
+          "headers": {
+            "Host": "xray-vpn-myself234234234-3a29630f.koyeb.app"
+          }
         }
       }
     }
