@@ -1,61 +1,46 @@
 #!/bin/sh
-cd /xray
 
-apk update
-apk add --no-cache wget unzip curl nginx
+PORT=${PORT:-8080}
+UUID=${UUID:-"a1b2c3d4-e5f6-7890-abcd-ef1234567890"}
 
-mkdir -p /var/www/html
-echo '{"status":"ok","version":"2.0"}' > /var/www/html/health.json
-
-# nginx как TCP relay к VPS
-cat > /etc/nginx/nginx.conf << 'NGINXEOF'
-worker_processes 1;
-error_log /dev/stderr warn;
-pid /run/nginx.pid;
-daemon off;
-
-events { worker_connections 1024; }
-
-http {
-    access_log off;
-    
-    map $http_upgrade $connection_upgrade {
-        default upgrade;
-        '' close;
+# sing-box конфигурация - альтернативная реализация VLESS
+cat > /tmp/config.json << CONFIGEOF
+{
+  "log": {"level": "info"},
+  "dns": {
+    "servers": [
+      {"address": "8.8.8.8"},
+      {"address": "1.1.1.1"}
+    ]
+  },
+  "inbounds": [
+    {
+      "type": "vless",
+      "tag": "vless-in",
+      "listen": "0.0.0.0",
+      "listen_port": ${PORT},
+      "users": [
+        {"uuid": "${UUID}"}
+      ],
+      "transport": {
+        "type": "ws",
+        "path": "/tunnel",
+        "max_early_data": 2048,
+        "early_data_header_name": "Sec-WebSocket-Protocol"
+      }
     }
-
-    server {
-        listen 8080;
-        
-        location /health {
-            return 200 '{"status":"ok"}';
-            add_header Content-Type application/json;
-        }
-        
-        location / {
-            return 200 'OK';
-            add_header Content-Type text/plain;
-        }
-        
-        # WebSocket relay к VPS (Aeza)
-        location /vless {
-            proxy_pass http://77.221.156.175:8080;
-            proxy_http_version 1.1;
-            proxy_set_header Upgrade $http_upgrade;
-            proxy_set_header Connection $connection_upgrade;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_read_timeout 86400s;
-            proxy_send_timeout 86400s;
-            proxy_buffering off;
-            proxy_cache off;
-        }
+  ],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
     }
+  ]
 }
-NGINXEOF
+CONFIGEOF
 
-echo "=== Koyeb as Relay to VPS ==="
-cat /etc/nginx/nginx.conf
+echo "=== sing-box config ==="
+cat /tmp/config.json
+echo "======================"
 
-exec nginx
+exec sing-box run -c /tmp/config.json
