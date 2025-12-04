@@ -2,8 +2,9 @@
 
 PORT=${PORT:-8080}
 UUID=${UUID:-"a1b2c3d4-e5f6-7890-abcd-ef1234567890"}
+WSPATH=${WSPATH:-"/tunnel"}
 
-# sing-box конфигурация - альтернативная реализация VLESS
+# sing-box configuration for VLESS over WebSocket
 cat > /tmp/config.json << CONFIGEOF
 {
   "log": {"level": "info"},
@@ -24,7 +25,7 @@ cat > /tmp/config.json << CONFIGEOF
       ],
       "transport": {
         "type": "ws",
-        "path": "/tunnel",
+        "path": "${WSPATH}",
         "max_early_data": 2048,
         "early_data_header_name": "Sec-WebSocket-Protocol"
       }
