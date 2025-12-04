@@ -1,17 +1,39 @@
 {
   "log": {
-    "loglevel": "warning"
+    "loglevel": "info"
   },
   "inbounds": [
     {
-      "port": 10000,
-      "listen": "127.0.0.1",
+      "port": 8080,
       "protocol": "vless",
       "settings": {
         "clients": [
           {
-            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-            "flow": ""
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          }
+        ],
+        "decryption": "none",
+        "fallbacks": [
+          {
+            "dest": 8081
+          },
+          {
+            "path": "/tunnel",
+            "dest": "@vless"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp"
+      }
+    },
+    {
+      "listen": "@vless",
+      "protocol": "vless",
+      "settings": {
+        "clients": [
+          {
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
           }
         ],
         "decryption": "none"
@@ -19,18 +41,14 @@
       "streamSettings": {
         "network": "ws",
         "wsSettings": {
-          "path": "/stream",
-          "headers": {
-            "Host": "xray-vpn-myself234234234-3a29630f.koyeb.app"
-          }
+          "path": "/tunnel"
         }
       }
     }
   ],
   "outbounds": [
     {
-      "protocol": "freedom",
-      "settings": {}
+      "protocol": "freedom"
     }
   ]
 }
