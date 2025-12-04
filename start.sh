@@ -9,26 +9,25 @@ unzip -o ./Xray-linux-64.zip
 rm ./Xray-linux-64.zip
 
 PORT=${PORT:-8080}
-ID=${ID:-"a1b2c3d4-e5f6-7890-abcd-ef1234567890"}
+PASSWORD=${PASSWORD:-"HoldemVPN2024SecurePass"}
 WSPATH=${WSPATH:-"/api/v2/stream"}
 
-# XHTTP (SplitHTTP) - рекомендован для CDN
+# Trojan over WebSocket - лучшая маскировка
 cat > ./config.json <<XRAYEOF
 {
   "log": {"loglevel": "info"},
   "dns": {"servers": ["8.8.8.8", "1.1.1.1"]},
   "inbounds": [{
     "port": ${PORT},
-    "protocol": "vless",
+    "protocol": "trojan",
     "settings": {
-      "clients": [{"id": "${ID}"}],
-      "decryption": "none"
+      "clients": [{"password": "${PASSWORD}"}]
     },
     "streamSettings": {
-      "network": "xhttp",
-      "xhttpSettings": {
-        "path": "${WSPATH}",
-        "mode": "auto"
+      "network": "ws",
+      "security": "none",
+      "wsSettings": {
+        "path": "${WSPATH}"
       }
     },
     "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
@@ -37,6 +36,6 @@ cat > ./config.json <<XRAYEOF
 }
 XRAYEOF
 
-echo "=== XHTTP Config ==="
+echo "=== Trojan over WebSocket Config ==="
 cat ./config.json
 exec ./xray run -config ./config.json
