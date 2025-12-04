@@ -17,9 +17,9 @@
         "decryption": "none"
       },
       "streamSettings": {
-        "network": "grpc",
-        "grpcSettings": {
-          "serviceName": "TunService"
+        "network": "splithttp",
+        "splithttpSettings": {
+          "path": "/download"
         }
       }
     }
