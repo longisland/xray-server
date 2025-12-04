@@ -5,9 +5,7 @@ RUN apk add --no-cache curl unzip ca-certificates nginx && \
     unzip /tmp/xray.zip -d /usr/local/bin/ && \
     chmod +x /usr/local/bin/xray && \
     rm /tmp/xray.zip && \
-    mkdir -p /etc/xray /run/nginx /var/www
-
-RUN echo "OK" > /var/www/health.html
+    mkdir -p /etc/xray /run/nginx
 
 COPY config.json /etc/xray/config.json
 COPY nginx.conf /etc/nginx/nginx.conf
