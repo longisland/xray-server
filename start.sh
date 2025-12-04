@@ -2,24 +2,30 @@
 cd /xray
 
 apk update
-apk add --no-cache wget unzip curl socat
+apk add --no-cache wget unzip curl busybox-extras
 
-# Тест исходящего соединения и сохранение результата
-echo "=== Testing outbound connectivity ===" > /tmp/diag.txt
-echo "DNS test:" >> /tmp/diag.txt
-nslookup google.com >> /tmp/diag.txt 2>&1 || echo "DNS FAILED" >> /tmp/diag.txt
-echo "" >> /tmp/diag.txt
-echo "Curl test:" >> /tmp/diag.txt
-curl -s https://httpbin.org/ip >> /tmp/diag.txt 2>&1 || echo "CURL FAILED" >> /tmp/diag.txt
-echo "" >> /tmp/diag.txt
-echo "IP check:" >> /tmp/diag.txt
-curl -s https://api.ipify.org >> /tmp/diag.txt 2>&1
-echo "==================================" >> /tmp/diag.txt
+mkdir -p /www
 
-# Запускаем простой HTTP сервер для диагностики на порту 8081
-(while true; do
-  echo -e "HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\n$(cat /tmp/diag.txt)" | nc -l -p 8081 -q 1 2>/dev/null
-done) &
+# Тест исходящего соединения
+{
+  echo "=== Koyeb Outbound Connectivity Test ==="
+  echo "Date: $(date)"
+  echo ""
+  echo "DNS Test (google.com):"
+  nslookup google.com 2>&1 || echo "FAILED"
+  echo ""
+  echo "HTTP Test (httpbin.org/ip):"
+  curl -s --connect-timeout 5 https://httpbin.org/ip 2>&1 || echo "FAILED"
+  echo ""
+  echo "My IP:"
+  curl -s --connect-timeout 5 https://api.ipify.org 2>&1 || echo "FAILED"
+  echo ""
+  echo "=== End Test ==="
+} > /www/index.html
+
+# HTTP сервер для диагностики
+httpd -f -p 8081 -h /www &
+echo "Diagnostic server started on 8081"
 
 # Скачиваем Xray
 wget -q https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
@@ -32,36 +38,26 @@ WSPATH=${WSPATH:-"/api/v2/stream"}
 
 cat > ./config.json <<XRAYEOF
 {
-  "log": {
-    "loglevel": "warning"
-  },
-  "dns": {
-    "servers": ["8.8.8.8", "1.1.1.1"]
-  },
+  "log": {"loglevel": "warning"},
+  "dns": {"servers": ["8.8.8.8", "1.1.1.1"]},
   "inbounds": [{
     "port": ${PORT},
-    "listen": "0.0.0.0",
     "protocol": "vless",
     "settings": {
       "clients": [{"id": "${ID}"}],
       "decryption": "none",
-      "fallbacks": [
-        {"dest": 8081}
-      ]
+      "fallbacks": [{"dest": 8081}]
     },
     "streamSettings": {
       "network": "ws",
       "security": "none",
       "wsSettings": {"path": "${WSPATH}"}
     },
-    "sniffing": {
-      "enabled": true,
-      "destOverride": ["http", "tls"]
-    }
+    "sniffing": {"enabled": true, "destOverride": ["http", "tls"]}
   }],
   "outbounds": [{"protocol": "freedom"}]
 }
 XRAYEOF
 
-cat /tmp/diag.txt
+cat /www/index.html
 exec ./xray run -config ./config.json
