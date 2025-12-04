@@ -15,14 +15,24 @@ PORT=${PORT:-8080}
 ID=${ID:-"a1b2c3d4-e5f6-7890-abcd-ef1234567890"}
 WSPATH=${WSPATH:-"/api/v2/stream"}
 
-# Генерируем config.json - ЧИСТЫЙ WebSocket без fallback!
+# Полная конфигурация с DNS и routing
 cat > ./config.json <<XRAYEOF
 {
   "log": {
-    "loglevel": "warning"
+    "loglevel": "info",
+    "access": "/dev/stdout",
+    "error": "/dev/stderr"
+  },
+  "dns": {
+    "servers": [
+      "8.8.8.8",
+      "8.8.4.4",
+      "1.1.1.1"
+    ]
   },
   "inbounds": [{
     "port": ${PORT},
+    "listen": "0.0.0.0",
     "protocol": "vless",
     "settings": {
       "clients": [{
@@ -35,19 +45,46 @@ cat > ./config.json <<XRAYEOF
       "network": "ws",
       "security": "none",
       "wsSettings": {
-        "path": "${WSPATH}"
+        "path": "${WSPATH}",
+        "headers": {}
       }
+    },
+    "sniffing": {
+      "enabled": true,
+      "destOverride": ["http", "tls"]
     }
   }],
-  "outbounds": [{
-    "protocol": "freedom",
-    "settings": {}
-  }]
+  "outbounds": [
+    {
+      "protocol": "freedom",
+      "settings": {
+        "domainStrategy": "UseIP"
+      },
+      "tag": "direct"
+    },
+    {
+      "protocol": "blackhole",
+      "settings": {},
+      "tag": "blocked"
+    }
+  ],
+  "routing": {
+    "domainStrategy": "AsIs",
+    "rules": [
+      {
+        "type": "field",
+        "ip": ["geoip:private"],
+        "outboundTag": "blocked"
+      }
+    ]
+  }
 }
 XRAYEOF
 
-echo "Starting Xray with config:"
+echo "=== Xray Config ==="
 cat ./config.json
+echo "==================="
+echo "Starting Xray..."
 
 # Запускаем Xray
-./xray run -config ./config.json
+exec ./xray run -config ./config.json
