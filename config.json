@@ -1,6 +1,6 @@
 {
   "log": {
-    "loglevel": "info"
+    "loglevel": "warning"
   },
   "inbounds": [
     {
@@ -15,15 +15,33 @@
         "decryption": "none",
         "fallbacks": [
           {
-            "dest": 8081
+            "dest": "127.0.0.1:8081"
+          },
+          {
+            "path": "/tunnel",
+            "dest": "@vless-ws"
           }
         ]
       },
       "streamSettings": {
-        "network": "splithttp",
-        "splithttpSettings": {
-          "path": "/api",
-          "host": "xray-vpn-myself234234234-3a29630f.koyeb.app"
+        "network": "tcp"
+      }
+    },
+    {
+      "listen": "@vless-ws",
+      "protocol": "vless", 
+      "settings": {
+        "clients": [
+          {
+            "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          }
+        ],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": {
+          "path": "/tunnel"
         }
       }
     }

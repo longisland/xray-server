@@ -1,16 +1,16 @@
 FROM alpine:latest
 
-RUN apk add --no-cache curl unzip ca-certificates busybox-extras && \
+RUN apk add --no-cache curl unzip ca-certificates nginx && \
     curl -L -o /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
     unzip /tmp/xray.zip -d /usr/local/bin/ && \
     chmod +x /usr/local/bin/xray && \
     rm /tmp/xray.zip && \
-    mkdir -p /etc/xray /www
+    mkdir -p /etc/xray /run/nginx /var/www
 
-# Simple health page
-RUN echo "OK" > /www/index.html
+RUN echo "OK" > /var/www/health.html
 
 COPY config.json /etc/xray/config.json
+COPY nginx.conf /etc/nginx/nginx.conf
 COPY start.sh /start.sh
 RUN chmod +x /start.sh
 
