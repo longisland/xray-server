@@ -17,12 +17,9 @@
         "decryption": "none"
       },
       "streamSettings": {
-        "network": "ws",
-        "wsSettings": {
-          "path": "/api/v2/events",
-          "headers": {
-            "Host": "xray-vpn-myself234234234-3a29630f.koyeb.app"
-          }
+        "network": "grpc",
+        "grpcSettings": {
+          "serviceName": "TunService"
         }
       }
     }
