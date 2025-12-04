@@ -3,7 +3,16 @@ cd /xray
 
 # Устанавливаем зависимости
 apk update
-apk add --no-cache wget unzip
+apk add --no-cache wget unzip curl
+
+# Тест исходящего соединения
+echo "=== Testing outbound connectivity ==="
+echo "DNS test:"
+nslookup google.com || echo "DNS FAILED"
+echo ""
+echo "HTTP test:"
+curl -s -o /dev/null -w "HTTP: %{http_code}\n" https://httpbin.org/ip || echo "HTTP FAILED"
+echo "=================================="
 
 # Скачиваем Xray
 wget -q https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip
@@ -15,19 +24,19 @@ PORT=${PORT:-8080}
 ID=${ID:-"a1b2c3d4-e5f6-7890-abcd-ef1234567890"}
 WSPATH=${WSPATH:-"/api/v2/stream"}
 
-# Полная конфигурация с DNS и routing
+# Конфигурация
 cat > ./config.json <<XRAYEOF
 {
   "log": {
-    "loglevel": "info",
+    "loglevel": "debug",
     "access": "/dev/stdout",
     "error": "/dev/stderr"
   },
   "dns": {
     "servers": [
       "8.8.8.8",
-      "8.8.4.4",
-      "1.1.1.1"
+      "1.1.1.1",
+      "localhost"
     ]
   },
   "inbounds": [{
@@ -45,46 +54,28 @@ cat > ./config.json <<XRAYEOF
       "network": "ws",
       "security": "none",
       "wsSettings": {
-        "path": "${WSPATH}",
-        "headers": {}
+        "path": "${WSPATH}"
       }
     },
     "sniffing": {
       "enabled": true,
-      "destOverride": ["http", "tls"]
+      "destOverride": ["http", "tls"],
+      "routeOnly": false
     }
   }],
   "outbounds": [
     {
       "protocol": "freedom",
-      "settings": {
-        "domainStrategy": "UseIP"
-      },
-      "tag": "direct"
-    },
-    {
-      "protocol": "blackhole",
-      "settings": {},
-      "tag": "blocked"
+      "tag": "direct",
+      "settings": {}
     }
-  ],
-  "routing": {
-    "domainStrategy": "AsIs",
-    "rules": [
-      {
-        "type": "field",
-        "ip": ["geoip:private"],
-        "outboundTag": "blocked"
-      }
-    ]
-  }
+  ]
 }
 XRAYEOF
 
 echo "=== Xray Config ==="
 cat ./config.json
 echo "==================="
-echo "Starting Xray..."
+echo "Starting Xray with debug logging..."
 
-# Запускаем Xray
 exec ./xray run -config ./config.json
