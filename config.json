@@ -1,10 +1,11 @@
 {
   "log": {
-    "loglevel": "info"
+    "loglevel": "warning"
   },
   "inbounds": [
     {
-      "port": 8080,
+      "port": 10000,
+      "listen": "127.0.0.1",
       "protocol": "vless",
       "settings": {
         "clients": [
@@ -13,13 +14,7 @@
             "flow": ""
           }
         ],
-        "decryption": "none",
-        "fallbacks": [
-          {
-            "dest": 8081,
-            "xver": 0
-          }
-        ]
+        "decryption": "none"
       },
       "streamSettings": {
         "network": "ws",
@@ -27,12 +22,6 @@
           "path": "/vless"
         }
       }
-    },
-    {
-      "port": 8081,
-      "protocol": "http",
-      "settings": {},
-      "tag": "health"
     }
   ],
   "outbounds": [

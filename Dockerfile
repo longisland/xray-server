@@ -1,20 +1,18 @@
 FROM alpine:latest
 
-# Install xray
-RUN apk add --no-cache curl unzip ca-certificates tzdata && \
+# Install xray, nginx, and supervisor
+RUN apk add --no-cache curl unzip ca-certificates tzdata nginx supervisor && \
     curl -L -o /tmp/xray.zip https://github.com/XTLS/Xray-core/releases/latest/download/Xray-linux-64.zip && \
     unzip /tmp/xray.zip -d /usr/local/bin/ && \
     chmod +x /usr/local/bin/xray && \
-    rm /tmp/xray.zip
+    rm /tmp/xray.zip && \
+    mkdir -p /etc/xray /run/nginx /var/log/supervisor
 
-# Create config directory
-RUN mkdir -p /etc/xray
-
-# Copy config
+# Copy configs
 COPY config.json /etc/xray/config.json
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY supervisord.conf /etc/supervisord.conf
 
-# Expose port (Koyeb expects 8080)
 EXPOSE 8080
 
-# Health check endpoint will be handled by xray fallback
-CMD ["xray", "run", "-config", "/etc/xray/config.json"]
+CMD ["supervisord", "-c", "/etc/supervisord.conf"]
